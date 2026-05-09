@@ -1,0 +1,44 @@
+import { NextRequest } from "next/server";
+import { db } from "@/lib/db";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ classId: string }> }
+) {
+  const { classId } = await params;
+
+  const classData = await db.class.findUnique({
+    where: { id: classId },
+  });
+
+  if (!classData) {
+    return errorResponse("Class not found", 404);
+  }
+
+  const now = new Date();
+
+  const schedules = await db.schedule.findMany({
+    where: {
+      classId,
+      startTime: { gt: now },
+      isCancelled: false,
+    },
+    include: {
+      enrollments: true,
+    },
+    orderBy: { startTime: "asc" },
+  });
+
+  const freeSlots = schedules
+    .filter((s) => s.enrollments.length < classData.maxStudents)
+    .map((s) => ({
+      id: s.id,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      spotsAvailable: classData.maxStudents - s.enrollments.length,
+      totalSpots: classData.maxStudents,
+    }));
+
+  return successResponse(freeSlots);
+}

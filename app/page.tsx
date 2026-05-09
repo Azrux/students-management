@@ -1,65 +1,96 @@
-import Image from "next/image";
+import Link from "next/link";
+import { t } from "@/lib/i18n/es";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow-sm">
+        <div className="container-max flex items-center justify-between py-4">
+          <div className="text-2xl font-bold text-[var(--primary)]">
+            StudentsApp
+          </div>
+          <div className="flex gap-4">
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 text-gray-700 hover:text-[var(--primary)]"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              {t.buttons.login}
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="btn-primary"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {t.buttons.signup}
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="container-max py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <h1 className="text-5xl font-bold text-[var(--primary)]">
+              Gestiona tus clases fácilmente
+            </h1>
+            <p className="text-xl text-[var(--text-secondary)]">
+              La plataforma todo-en-uno para profesores que quieren organizar
+              sus estudiantes, horarios y pagos en un solo lugar.
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl text-[var(--accent)]">✓</span>
+                <p className="text-lg">Gestiona estudiantes y horarios</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl text-[var(--accent)]">✓</span>
+                <p className="text-lg">Crea planes de pago personalizados</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl text-[var(--accent)]">✓</span>
+                <p className="text-lg">Integración con MercadoPago</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl text-[var(--accent)]">✓</span>
+                <p className="text-lg">Tema personalizable para tu marca</p>
+              </div>
+            </div>
+            <div className="flex gap-4 pt-6">
+              <Link
+                href="/auth/signup"
+                className="btn-primary text-lg"
+              >
+                Comenzar ahora
+              </Link>
+              <Link
+                href="#features"
+                className="px-6 py-3 border-2 border-[var(--primary)] text-[var(--primary)] rounded-lg font-semibold hover:bg-blue-50"
+              >
+                Conoce más
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="space-y-4">
+              <div className="h-12 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] rounded-lg"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-20 py-8">
+        <div className="container-max text-center text-[var(--text-secondary)]">
+          <p>&copy; 2026 StudentsApp. Todos los derechos reservados.</p>
+        </div>
+      </footer>
     </div>
   );
 }

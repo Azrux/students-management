@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+// Tenant = each teacher's workspace
+model Tenant {
+  id            String   @id @default(cuid()) @map("_id")
+  slug          String   @unique
+  name          String
+  email         String
+  timezone      String   @default("UTC")
+
+  // Design System / Theme (JSON document)
+  theme         Json @default("{\"primary\":\"#3b82f6\",\"secondary\":\"#1e40af\",\"accent\":\"#f59e0b\",\"background\":\"#ffffff\",\"textPrimary\":\"#000000\",\"textSecondary\":\"#666666\",\"logoUrl\":null,\"fontFamily\":\"Inter\",\"tagline\":null,\"template\":\"default\"}")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  students      Student[]
+  classes       Class[]
+  schedules     Schedule[]
+  paymentPlans  PaymentPlan[]
+  payments      Payment[]
+}
+
+// User = both students and teachers
+model User {
+  id            String   @id @default(cuid()) @map("_id")
+  email         String
+  passwordHash  String
+  name          String
+  role          Role
+  tenantId      String?
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile Student?
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+// Student = enrolled learner
+model Student {
+  id            String   @id @default(cuid()) @map("_id")
+  userId        String   @unique
+  tenantId      String
+  name          String
+  email         String
+  phone         String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments   Enrollment[]
+  payments      Payment[]
+
+  @@index([tenantId])
+}
+
+// Class = type of class (e.g., "Padel Beginners")
+model Class {
+  id            String   @id @default(cuid()) @map("_id")
+  tenantId      String
+  name          String
+  description   String?
+  durationMins  Int      @default(60)
+  maxStudents   Int      @default(10)
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  schedules     Schedule[]
+  enrollments   Enrollment[]
+  paymentPlans  PaymentPlan[]
+
+  @@index([tenantId])
+}
+
+// Schedule = specific class instance (time slot)
+model Schedule {
+  id            String   @id @default(cuid()) @map("_id")
+  tenantId      String
+  classId       String
+  startTime     DateTime
+  endTime       DateTime
+  isCancelled   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  enrollments   Enrollment[]
+
+  @@index([tenantId])
+  @@index([classId])
+  @@index([startTime])
+}
+
+// Enrollment = student attending a schedule
+model Enrollment {
+  id            String   @id @default(cuid()) @map("_id")
+  tenantId      String
+  studentId     String
+  classId       String
+  scheduleId    String?
+  paidClasses   Int      @default(0)
+  status        EnrollmentStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  schedule      Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, classId, scheduleId])
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([classId])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+// PaymentPlan = teacher's pricing (5 classes for $50)
+model PaymentPlan {
+  id            String   @id @default(cuid()) @map("_id")
+  tenantId      String
+  classId       String
+  name          String
+  numClasses    Int
+  price         Float
+  validityDays  Int      @default(90)
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+
+  @@index([tenantId])
+  @@index([classId])
+}
+
+// Payment = student buys class pack
+model Payment {
+  id              String   @id @default(cuid()) @map("_id")
+  tenantId        String
+  studentId       String
+  planId          String
+  amount          Float
+
+  // Class tracking
+  totalClasses    Int
+  classesUsed     Int      @default(0)
+
+  // Payment details
+  status          PaymentStatus @default(PENDING)
+  mercadoPagoId   String?
+  paidAt          DateTime?
+  expiresAt       DateTime?
+
+  // Notes from teacher
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  plan            PaymentPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
