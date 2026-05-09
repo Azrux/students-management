@@ -40,19 +40,27 @@ export default function AppLayout({
           <h1 className="text-2xl font-bold text-[var(--primary)]">StudentsApp</h1>
         </div>
         <ul className="space-y-2 px-4">
-          <li>
-            <Link
-              href="/app/dashboard"
-              className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
-            >
-              {t.nav.dashboard}
-            </Link>
-          </li>
           {userRole === "TEACHER" && (
             <>
               <li>
                 <Link
-                  href="/app/teacher/students"
+                  href="/teacher/dashboard"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  {t.nav.dashboard}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/teacher/classes"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  Mis Clases
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/teacher/students"
                   className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
                 >
                   {t.nav.students}
@@ -60,7 +68,7 @@ export default function AppLayout({
               </li>
               <li>
                 <Link
-                  href="/app/teacher/schedule"
+                  href="/teacher/schedules"
                   className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
                 >
                   {t.nav.schedule}
@@ -68,10 +76,26 @@ export default function AppLayout({
               </li>
               <li>
                 <Link
-                  href="/app/teacher/payments"
+                  href="/teacher/payment-plans"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  Planes de Pago
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/teacher/payments"
                   className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
                 >
                   {t.nav.payments}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/teacher/analytics"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  Analytics
                 </Link>
               </li>
             </>
@@ -80,7 +104,15 @@ export default function AppLayout({
             <>
               <li>
                 <Link
-                  href="/app/student/schedule"
+                  href="/student/dashboard"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  {t.nav.dashboard}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/student/schedule"
                   className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
                 >
                   {t.nav.schedule}
@@ -88,10 +120,22 @@ export default function AppLayout({
               </li>
               <li>
                 <Link
-                  href="/app/student/payments"
+                  href="/student/shop"
                   className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
                 >
-                  {t.nav.payments}
+                  Comprar Clases
+                </Link>
+              </li>
+            </>
+          )}
+          {userRole === "ADMIN" && (
+            <>
+              <li>
+                <Link
+                  href="/admin/tenants"
+                  className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded"
+                >
+                  Tenants
                 </Link>
               </li>
             </>

@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { getCurrentUserWithTenant, errorResponse, successResponse } from "@/lib/api-helpers";
+import { getCurrentUserWithTenant, errorResponse, successResponse, isUserTenantResult } from "@/lib/api-helpers";
+import { sendPaymentConfirmationEmail, sendTeacherPaymentReceivedEmail } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   const result = await getCurrentUserWithTenant(request);
-  if (result instanceof NextResponse) return result;
+  if (!isUserTenantResult(result)) return result;
 
   const { tenant } = result;
 
@@ -22,9 +23,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const result = await getCurrentUserWithTenant(request);
-  if (result instanceof NextResponse) return result;
+  if (!isUserTenantResult(result)) return result;
 
-  const { tenant } = result;
+  const { user, tenant } = result;
   const { studentId, planId, amount, notes } = await request.json();
 
   if (!studentId || !planId || !amount) {
@@ -70,6 +71,24 @@ export async function POST(request: NextRequest) {
       plan: { include: { class: true } },
     },
   });
+
+  // Send confirmation emails
+  await sendPaymentConfirmationEmail(
+    student.name,
+    student.email,
+    plan.name,
+    parseFloat(amount.toString()),
+    plan.numClasses,
+    expiresAt
+  );
+
+  await sendTeacherPaymentReceivedEmail(
+    user.name,
+    user.email,
+    student.name,
+    plan.name,
+    parseFloat(amount.toString())
+  );
 
   return successResponse(payment, 201);
 }

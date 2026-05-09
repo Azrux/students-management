@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { getCurrentUserWithTenant, errorResponse, successResponse } from "@/lib/api-helpers";
+import { getCurrentUserWithTenant, errorResponse, successResponse, isUserTenantResult } from "@/lib/api-helpers";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const result = await getCurrentUserWithTenant(request);
-  if (result instanceof NextResponse) return result;
+  if (!isUserTenantResult(result)) return result;
 
   const { tenant } = result;
   const { id } = await params;

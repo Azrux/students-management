@@ -30,6 +30,7 @@ model Tenant {
   schedules     Schedule[]
   paymentPlans  PaymentPlan[]
   payments      Payment[]
+  progressNotes ProgressNote[]
 }
 
 // User = both students and teachers
@@ -41,6 +42,9 @@ model User {
   role          Role
   tenantId      String?
   createdAt     DateTime @default(now())
+
+  // Notification preferences
+  emailNotifications Json @default("{\"paymentConfirmation\":true,\"paymentReminder\":true,\"classReminder\":true,\"paymentReceived\":true}")
 
   tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   studentProfile Student?
@@ -69,6 +73,7 @@ model Student {
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enrollments   Enrollment[]
   payments      Payment[]
+  progressNotes ProgressNote[]
 
   @@index([tenantId])
 }
@@ -87,6 +92,7 @@ model Class {
   schedules     Schedule[]
   enrollments   Enrollment[]
   paymentPlans  PaymentPlan[]
+  progressNotes ProgressNote[]
 
   @@index([tenantId])
 }
@@ -194,4 +200,24 @@ enum PaymentStatus {
   EXPIRED
   CANCELLED
   REFUNDED
+}
+
+// ProgressNote = teacher's notes on student progress
+model ProgressNote {
+  id            String   @id @default(cuid()) @map("_id")
+  tenantId      String
+  studentId     String
+  classId       String
+  note          String
+  rating        Int?     // 1-5 scale
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([classId])
 }

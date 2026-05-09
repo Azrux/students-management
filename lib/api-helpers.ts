@@ -5,7 +5,7 @@ import { User, Tenant } from "@prisma/client";
 
 export async function getCurrentUserWithTenant(
   request: NextRequest
-): Promise<{ user: User; tenant: Tenant } | NextResponse> {
+): Promise<NextResponse | { user: User; tenant: Tenant }> {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
@@ -44,4 +44,10 @@ export function errorResponse(message: string, status: number) {
 
 export function successResponse(data: any, status: number = 200) {
   return NextResponse.json(data, { status });
+}
+
+export function isUserTenantResult(
+  result: NextResponse | { user: User; tenant: Tenant }
+): result is { user: User; tenant: Tenant } {
+  return !(result instanceof NextResponse);
 }
