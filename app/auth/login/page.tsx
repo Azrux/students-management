@@ -30,7 +30,7 @@ export default function LoginPage() {
       } else if (result?.ok) {
         router.push("/app/dashboard");
       }
-    } catch (err) {
+    } catch {
       setError("Error al iniciar sesión");
     } finally {
       setLoading(false);

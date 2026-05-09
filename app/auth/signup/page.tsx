@@ -42,7 +42,7 @@ export default function SignupPage() {
       }
 
       router.push("/auth/login");
-    } catch (err) {
+    } catch {
       setError("Error al registrarse");
     } finally {
       setLoading(false);

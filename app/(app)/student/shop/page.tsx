@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 
 interface PaymentPlan {
   id: string;
@@ -15,11 +14,10 @@ interface PaymentPlan {
 }
 
 export default function StudentShop() {
-  const router = useRouter();
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -40,8 +38,14 @@ export default function StudentShop() {
     fetchPlans();
   }, []);
 
-  const handleCheckout = async (planId: string) => {
-    setCheckingOut(true);
+  useEffect(() => {
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    }
+  }, [checkoutUrl]);
+
+  const handleCheckout = useCallback(async (planId: string) => {
+    setCheckingOut(planId);
 
     try {
       const res = await fetch("/api/payments/create-preference", {
@@ -55,17 +59,16 @@ export default function StudentShop() {
       const data = await res.json();
 
       if (data.data?.checkoutUrl) {
-        window.location.href = data.data.checkoutUrl;
+        setCheckoutUrl(data.data.checkoutUrl);
       } else {
         throw new Error("No checkout URL received");
       }
     } catch (err) {
       console.error("Error creating checkout:", err);
       alert("Error al procesar el pago");
-    } finally {
-      setCheckingOut(false);
+      setCheckingOut(null);
     }
-  };
+  }, []);
 
   return (
     <div className="p-8">
@@ -112,10 +115,10 @@ export default function StudentShop() {
 
                 <button
                   onClick={() => handleCheckout(plan.id)}
-                  disabled={checkingOut && selectedPlanId === plan.id}
+                  disabled={checkingOut === plan.id}
                   className="btn-primary w-full"
                 >
-                  {checkingOut && selectedPlanId === plan.id
+                  {checkingOut === plan.id
                     ? "Procesando..."
                     : "Comprar Ahora"}
                 </button>

@@ -42,7 +42,7 @@ export function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export function successResponse(data: any, status: number = 200) {
+export function successResponse(data: unknown, status: number = 200) {
   return NextResponse.json(data, { status });
 }
 

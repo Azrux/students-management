@@ -3,11 +3,16 @@
 import { useSession } from "next-auth/react";
 import { t } from "@/lib/i18n/es";
 
+interface SessionUser {
+  role?: string;
+  name?: string;
+}
+
 export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role;
+  const userRole = (session?.user as SessionUser)?.role;
   const userName = session?.user?.name;
 
   return (

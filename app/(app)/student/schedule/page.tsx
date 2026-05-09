@@ -43,26 +43,23 @@ export default function StudentSchedule() {
   }, []);
 
   useEffect(() => {
-    if (selectedClassId) {
-      fetchSlots();
-    }
+    if (!selectedClassId) return;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/student/classes/${selectedClassId}/free-slots`);
+        if (!res.ok) throw new Error("Failed to fetch slots");
+        const data = await res.json();
+        setSlots(data.data || []);
+      } catch (err) {
+        console.error("Error fetching slots:", err);
+        alert("Error al cargar horarios");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [selectedClassId]);
-
-  const fetchSlots = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/student/classes/${selectedClassId}/free-slots`);
-      if (!res.ok) throw new Error("Failed to fetch slots");
-
-      const data = await res.json();
-      setSlots(data.data || []);
-    } catch (err) {
-      console.error("Error fetching slots:", err);
-      alert("Error al cargar horarios");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEnroll = async (scheduleId: string) => {
     setEnrolling(scheduleId);
@@ -80,7 +77,21 @@ export default function StudentSchedule() {
       if (!res.ok) throw new Error("Failed to enroll");
 
       alert("Inscripción exitosa");
-      await fetchSlots();
+
+      try {
+        setLoading(true);
+        const slotsRes = await fetch(
+          `/api/student/classes/${selectedClassId}/free-slots`
+        );
+        if (slotsRes.ok) {
+          const data = await slotsRes.json();
+          setSlots(data.data || []);
+        }
+      } catch (err) {
+        console.error("Error refetching slots:", err);
+      } finally {
+        setLoading(false);
+      }
     } catch (err) {
       console.error("Error enrolling:", err);
       alert("Error al inscribirse");

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { t } from "@/lib/i18n/es";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface TenantTheme {
   primary: string;
@@ -45,7 +44,6 @@ const TEMPLATES = {
 };
 
 export default function BrandingPage({ params }: { params: { tenantId: string } }) {
-  const router = useRouter();
   const [theme, setTheme] = useState<TenantTheme | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -252,9 +250,11 @@ export default function BrandingPage({ params }: { params: { tenantId: string } 
             }}
           >
             {theme.logoUrl && (
-              <img
+              <Image
                 src={theme.logoUrl}
                 alt="Logo"
+                width={48}
+                height={48}
                 className="h-12 mb-4"
               />
             )}

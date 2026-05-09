@@ -23,23 +23,23 @@ export default function ClassesList() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await fetch("/api/teacher/classes");
+        if (!res.ok) throw new Error("Failed to fetch classes");
+
+        const data = await res.json();
+        setClasses(data.data || []);
+      } catch (err) {
+        console.error("Error fetching classes:", err);
+        alert("Error al cargar clases");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchClasses();
   }, []);
-
-  const fetchClasses = async () => {
-    try {
-      const res = await fetch("/api/teacher/classes");
-      if (!res.ok) throw new Error("Failed to fetch classes");
-
-      const data = await res.json();
-      setClasses(data.data || []);
-    } catch (err) {
-      console.error("Error fetching classes:", err);
-      alert("Error al cargar clases");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

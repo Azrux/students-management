@@ -2,6 +2,19 @@
 
 import { useEffect, useState } from "react";
 
+interface StudentData {
+  id: string;
+}
+
+interface PaymentData {
+  studentId: string;
+  status: string;
+  expiresAt?: string;
+  amount: number;
+  plan: { name: string };
+  createdAt: string;
+}
+
 interface AnalyticsData {
   totalRevenue: number;
   totalPayments: number;
@@ -48,10 +61,10 @@ export default function AnalyticsPage() {
         const payments = paymentsData.data || [];
 
         // Calculate analytics
-        const totalRevenue = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
-        const activeStudents = students.filter((s: any) =>
+        const totalRevenue = payments.reduce((sum: number, p: PaymentData) => sum + p.amount, 0);
+        const activeStudents = students.filter((s: StudentData) =>
           payments.some(
-            (p: any) =>
+            (p: PaymentData) =>
               p.studentId === s.id &&
               p.status === "COMPLETED" &&
               (!p.expiresAt || new Date(p.expiresAt) > new Date())
@@ -59,15 +72,15 @@ export default function AnalyticsPage() {
         ).length;
 
         const paymentsByStatus = {
-          COMPLETED: payments.filter((p: any) => p.status === "COMPLETED").length,
-          PENDING: payments.filter((p: any) => p.status === "PENDING").length,
-          EXPIRED: payments.filter((p: any) => p.status === "EXPIRED").length,
-          CANCELLED: payments.filter((p: any) => p.status === "CANCELLED").length,
+          COMPLETED: payments.filter((p: PaymentData) => p.status === "COMPLETED").length,
+          PENDING: payments.filter((p: PaymentData) => p.status === "PENDING").length,
+          EXPIRED: payments.filter((p: PaymentData) => p.status === "EXPIRED").length,
+          CANCELLED: payments.filter((p: PaymentData) => p.status === "CANCELLED").length,
         };
 
         // Group by plan
         const planGroups: { [key: string]: { revenue: number; count: number } } = {};
-        payments.forEach((p: any) => {
+        payments.forEach((p: PaymentData) => {
           const planName = p.plan.name;
           if (!planGroups[planName]) {
             planGroups[planName] = { revenue: 0, count: 0 };
@@ -87,7 +100,7 @@ export default function AnalyticsPage() {
 
         // Monthly revenue
         const monthlyData: { [key: string]: number } = {};
-        payments.forEach((p: any) => {
+        payments.forEach((p: PaymentData) => {
           const date = new Date(p.createdAt);
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
             2,

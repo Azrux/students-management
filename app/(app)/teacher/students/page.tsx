@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { t } from "@/lib/i18n/es";
 
 interface Student {
   id: string;

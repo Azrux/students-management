@@ -6,6 +6,11 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { t } from "@/lib/i18n/es";
 
+interface SessionUser {
+  role?: string;
+  name?: string;
+}
+
 export const dynamic = "force-dynamic";
 
 export default function AppLayout({
@@ -30,7 +35,7 @@ export default function AppLayout({
     return null;
   }
 
-  const userRole = (session.user as any)?.role;
+  const userRole = (session.user as SessionUser)?.role;
 
   return (
     <div className="flex h-screen bg-gray-100">

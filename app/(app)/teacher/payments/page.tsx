@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface Payment {
   id: string;
@@ -22,13 +22,9 @@ interface Payment {
 export default function PaymentsList() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       const res = await fetch("/api/teacher/payments");
       if (!res.ok) throw new Error("Failed to fetch payments");
@@ -41,7 +37,14 @@ export default function PaymentsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      void fetchPayments();
+    }
+  }, [fetchPayments]);
 
   const markAttendance = async (paymentId: string) => {
     try {

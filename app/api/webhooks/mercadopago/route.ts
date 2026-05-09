@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "already_processed" }, { status: 200 });
     }
 
-    const createdPayment = await db.payment.create({
+    await db.payment.create({
       data: {
         tenantId,
         studentId,

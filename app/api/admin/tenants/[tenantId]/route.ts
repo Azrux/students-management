@@ -64,6 +64,7 @@ export async function PUT(
       return errorResponse("Tenant not found", 404);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (theme) updateData.theme = theme;
     if (name) updateData.name = name;

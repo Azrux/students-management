@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { t } from "@/lib/i18n/es";
 import Link from "next/link";
 
 interface DashboardStats {
@@ -9,6 +8,11 @@ interface DashboardStats {
   totalPayments: number;
   totalRevenue: number;
   pendingPayments: number;
+}
+
+interface Payment {
+  amount: number;
+  status: string;
 }
 
 export default function TeacherDashboard() {
@@ -38,8 +42,8 @@ export default function TeacherDashboard() {
         const students = studentsData.data || [];
         const payments = paymentsData.data || [];
 
-        const totalRevenue = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
-        const pending = payments.filter((p: any) => p.status === "PENDING").length;
+        const totalRevenue = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
+        const pending = payments.filter((p: Payment) => p.status === "PENDING").length;
 
         setStats({
           totalStudents: students.length,
