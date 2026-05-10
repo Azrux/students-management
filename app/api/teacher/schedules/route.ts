@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
 
   const schedules = await db.schedule.findMany({
     where: { tenantId: tenant.id, isCancelled: false },
-    include: { class: true },
+    include: {
+      class: true,
+      _count: { select: { enrollments: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -54,7 +57,10 @@ export async function POST(request: NextRequest) {
       timeEnd,
       specificDate: !isRecurring && specificDate ? new Date(specificDate) : null,
     },
-    include: { class: true },
+    include: {
+      class: true,
+      _count: { select: { enrollments: true } },
+    },
   });
 
   return successResponse(schedule, 201);
