@@ -26,7 +26,7 @@ export default function StudentShop() {
         if (!res.ok) throw new Error("Failed to fetch plans");
 
         const data = await res.json();
-        setPlans(data.data || []);
+        setPlans(data || []);
       } catch (err) {
         console.error("Error fetching plans:", err);
         alert("Error al cargar planes");
@@ -58,8 +58,8 @@ export default function StudentShop() {
 
       const data = await res.json();
 
-      if (data.data?.checkoutUrl) {
-        setCheckoutUrl(data.data.checkoutUrl);
+      if (data?.checkoutUrl) {
+        setCheckoutUrl(data.checkoutUrl);
       } else {
         throw new Error("No checkout URL received");
       }

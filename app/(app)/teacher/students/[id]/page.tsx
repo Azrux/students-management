@@ -38,7 +38,7 @@ export default function StudentDetailPage({
         if (!res.ok) throw new Error("Failed to fetch students");
 
         const data = await res.json();
-        const students = data.data || [];
+        const students = data || [];
         const found = students.find((s: StudentDetail) => s.id === params.id);
 
         if (found) {

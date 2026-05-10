@@ -30,7 +30,7 @@ export default function PaymentsList() {
       if (!res.ok) throw new Error("Failed to fetch payments");
 
       const data = await res.json();
-      setPayments(data.data || []);
+      setPayments(data || []);
     } catch (err) {
       console.error("Error fetching payments:", err);
       alert("Error al cargar pagos");

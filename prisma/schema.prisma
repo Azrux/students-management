@@ -36,8 +36,9 @@ model Tenant {
 // User = both students and teachers
 model User {
   id            String   @id @default(cuid()) @map("_id")
+  clerkId       String?  @unique
   email         String
-  passwordHash  String
+  passwordHash  String?
   name          String
   role          Role
   tenantId      String?
@@ -97,23 +98,28 @@ model Class {
   @@index([tenantId])
 }
 
-// Schedule = specific class instance (time slot)
+// Schedule = recurring weekly slot or one-off specific date
 model Schedule {
-  id            String   @id @default(cuid()) @map("_id")
+  id            String    @id @default(cuid()) @map("_id")
   tenantId      String
   classId       String
-  startTime     DateTime
-  endTime       DateTime
-  isCancelled   Boolean  @default(false)
-  createdAt     DateTime @default(now())
 
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  // true = repeats weekly on daysOfWeek; false = single specific date
+  isRecurring   Boolean   @default(true)
+  daysOfWeek    Int[]     // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+  timeStart     String    // "HH:MM"
+  timeEnd       String    // "HH:MM"
+  specificDate  DateTime? // only when isRecurring=false
+
+  isCancelled   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class         Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
   enrollments   Enrollment[]
 
   @@index([tenantId])
   @@index([classId])
-  @@index([startTime])
 }
 
 // Enrollment = student attending a schedule

@@ -1,20 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
 interface ProgressNote {
   id: string;
   note: string;
   rating?: number;
-  class: {
-    name: string;
-  };
+  class: { name: string };
   createdAt: string;
 }
 
 interface Class {
   id: string;
   name: string;
+}
+
+const progressSchema = z.object({
+  classId: z.string().min(1, "Seleccioná una clase"),
+  note: z
+    .string()
+    .min(10, "La nota debe tener al menos 10 caracteres")
+    .max(1000, "La nota no puede superar los 1000 caracteres"),
+  rating: z
+    .number()
+    .int()
+    .min(1, "La evaluación mínima es 1")
+    .max(5, "La evaluación máxima es 5")
+    .optional(),
+});
+
+type FormErrors = Partial<Record<string, string>>;
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="text-red-600 text-xs mt-1">{msg}</p>;
 }
 
 export default function StudentProgressPage({
@@ -32,6 +52,7 @@ export default function StudentProgressPage({
     note: "",
     rating: 0,
   });
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,8 +69,8 @@ export default function StudentProgressPage({
         const notesData = await notesRes.json();
         const classesData = await classesRes.json();
 
-        setNotes(notesData.data || []);
-        setClasses(classesData.data || []);
+        setNotes(notesData || []);
+        setClasses(classesData || []);
       } catch (err) {
         console.error("Error fetching data:", err);
         alert("Error al cargar datos");
@@ -63,22 +84,37 @@ export default function StudentProgressPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const parsed = progressSchema.safeParse({
+      classId: formData.classId,
+      note: formData.note,
+      rating: formData.rating > 0 ? formData.rating : undefined,
+    });
+
+    if (!parsed.success) {
+      const fieldErrors: FormErrors = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as string;
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
     setSubmitting(true);
 
     try {
       const res = await fetch(`/api/teacher/students/${params.id}/progress`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          rating: formData.rating > 0 ? formData.rating : null,
-        }),
+        body: JSON.stringify(parsed.data),
       });
 
       if (!res.ok) throw new Error("Failed to create note");
 
       const data = await res.json();
-      setNotes([data.data, ...notes]);
+      setNotes([data, ...notes]);
       setFormData({ classId: "", note: "", rating: 0 });
       setShowForm(false);
       alert("Nota de progreso agregada");
@@ -90,6 +126,11 @@ export default function StudentProgressPage({
     }
   };
 
+  const inputClass = (field: string) =>
+    `w-full px-3 py-2 border rounded input-field ${
+      errors[field] ? "border-red-500 focus:border-red-500" : "border-gray-300"
+    }`;
+
   const getRatingColor = (rating?: number) => {
     if (!rating) return "bg-gray-100";
     if (rating >= 4) return "bg-green-100";
@@ -100,14 +141,14 @@ export default function StudentProgressPage({
 
   const getRatingText = (rating?: number) => {
     if (!rating) return "";
-    const ratings = {
+    const ratings: Record<number, string> = {
       1: "Necesita mejora",
       2: "En progreso",
       3: "Satisfactorio",
       4: "Muy bueno",
       5: "Excelente",
     };
-    return ratings[rating as keyof typeof ratings] || "";
+    return ratings[rating] || "";
   };
 
   if (loading) {
@@ -127,19 +168,18 @@ export default function StudentProgressPage({
               <label className="block text-sm font-medium mb-2">Clase</label>
               <select
                 value={formData.classId}
-                onChange={(e) =>
-                  setFormData({ ...formData, classId: e.target.value })
-                }
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded input-field"
+                onChange={(e) => {
+                  setFormData({ ...formData, classId: e.target.value });
+                  setErrors((p) => ({ ...p, classId: undefined }));
+                }}
+                className={inputClass("classId")}
               >
                 <option value="">Seleccionar clase...</option>
                 {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              <FieldError msg={errors.classId} />
             </div>
 
             <div>
@@ -148,41 +188,57 @@ export default function StudentProgressPage({
               </label>
               <textarea
                 value={formData.note}
-                onChange={(e) =>
-                  setFormData({ ...formData, note: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, note: e.target.value });
+                  setErrors((p) => ({ ...p, note: undefined }));
+                }}
                 placeholder="Describe el progreso del estudiante..."
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded input-field h-24"
+                className={`${inputClass("note")} h-24`}
               />
+              <div className="flex justify-between items-start mt-1">
+                <FieldError msg={errors.note} />
+                <span className="text-gray-400 text-xs ml-auto">
+                  {formData.note.length}/1000
+                </span>
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Evaluación (1-5)
+                Evaluación{" "}
+                <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((r) => (
                   <button
                     key={r}
                     type="button"
-                    onClick={() => setFormData({ ...formData, rating: r })}
-                    className={`w-10 h-10 rounded border-2 transition ${
+                    onClick={() => {
+                      setFormData({ ...formData, rating: formData.rating === r ? 0 : r });
+                      setErrors((p) => ({ ...p, rating: undefined }));
+                    }}
+                    className={`w-10 h-10 rounded border-2 transition font-medium text-sm ${
                       formData.rating === r
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-300 hover:border-gray-400 text-gray-600"
                     }`}
                   >
                     {r}
                   </button>
                 ))}
+                {formData.rating > 0 && (
+                  <span className="self-center text-sm text-gray-600 ml-1">
+                    {getRatingText(formData.rating)}
+                  </span>
+                )}
               </div>
+              <FieldError msg={errors.rating} />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary w-full"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Guardando..." : "Guardar Nota"}
             </button>
@@ -191,7 +247,10 @@ export default function StudentProgressPage({
       )}
 
       <button
-        onClick={() => setShowForm(!showForm)}
+        onClick={() => {
+          setShowForm(!showForm);
+          setErrors({});
+        }}
         className="btn-primary mb-8"
       >
         {showForm ? "Cancelar" : "Agregar Nota"}

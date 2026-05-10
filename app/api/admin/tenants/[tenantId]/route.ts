@@ -1,41 +1,29 @@
 import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { errorResponse, successResponse } from "@/lib/api-helpers";
-import { getToken } from "next-auth/jwt";
 
-async function verifyAdminAccess(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  if (!token || token.role !== "ADMIN") {
+async function verifyAdminAccess() {
+  const { userId, sessionClaims } = await auth();
+  if (!userId || (sessionClaims?.publicMetadata as { role?: string })?.role !== "ADMIN") {
     return null;
   }
-
-  return token;
+  return userId;
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
-  const token = await verifyAdminAccess(request);
-  if (!token) {
+  if (!(await verifyAdminAccess())) {
     return errorResponse("Unauthorized - Admin access required", 403);
   }
 
   const { tenantId } = await params;
 
   try {
-    const tenant = await db.tenant.findUnique({
-      where: { id: tenantId },
-    });
-
-    if (!tenant) {
-      return errorResponse("Tenant not found", 404);
-    }
-
+    const tenant = await db.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) return errorResponse("Tenant not found", 404);
     return successResponse(tenant);
   } catch (err) {
     console.error("Error fetching tenant:", err);
@@ -47,8 +35,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
-  const token = await verifyAdminAccess(request);
-  if (!token) {
+  if (!(await verifyAdminAccess())) {
     return errorResponse("Unauthorized - Admin access required", 403);
   }
 
@@ -56,33 +43,20 @@ export async function PUT(
   const { theme, name, slug } = await request.json();
 
   try {
-    const tenant = await db.tenant.findUnique({
-      where: { id: tenantId },
-    });
-
-    if (!tenant) {
-      return errorResponse("Tenant not found", 404);
-    }
+    const tenant = await db.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) return errorResponse("Tenant not found", 404);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (theme) updateData.theme = theme;
     if (name) updateData.name = name;
     if (slug) {
-      const existingSlug = await db.tenant.findFirst({
-        where: { slug, id: { not: tenantId } },
-      });
-      if (existingSlug) {
-        return errorResponse("Slug already in use", 400);
-      }
+      const existingSlug = await db.tenant.findFirst({ where: { slug, id: { not: tenantId } } });
+      if (existingSlug) return errorResponse("Slug already in use", 400);
       updateData.slug = slug;
     }
 
-    const updated = await db.tenant.update({
-      where: { id: tenantId },
-      data: updateData,
-    });
-
+    const updated = await db.tenant.update({ where: { id: tenantId }, data: updateData });
     return successResponse(updated);
   } catch (err) {
     console.error("Error updating tenant:", err);

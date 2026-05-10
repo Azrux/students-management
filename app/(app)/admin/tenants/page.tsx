@@ -22,7 +22,7 @@ export default function TenantsList() {
         if (!res.ok) throw new Error("Failed to fetch tenants");
 
         const data = await res.json();
-        setTenants(data.data || []);
+        setTenants(data || []);
       } catch (err) {
         console.error("Error fetching tenants:", err);
         alert("Error al cargar tenants");

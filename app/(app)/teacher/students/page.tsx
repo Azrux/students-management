@@ -29,7 +29,7 @@ export default function StudentsList() {
         if (!res.ok) throw new Error("Failed to fetch students");
 
         const data = await res.json();
-        setStudents(data.data || []);
+        setStudents(data || []);
       } catch (err) {
         console.error("Error fetching students:", err);
         alert("Error al cargar estudiantes");

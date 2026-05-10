@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 
 interface FreeSlot {
   id: string;
-  startTime: string;
-  endTime: string;
+  isRecurring: boolean;
+  daysOfWeek: number[];
+  timeStart: string;
+  timeEnd: string;
+  specificDate?: string;
   spotsAvailable: number;
   totalSpots: number;
 }
@@ -13,6 +16,17 @@ interface FreeSlot {
 interface ClassOption {
   id: string;
   name: string;
+}
+
+const DAY_FULL = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+function formatSlotLabel(slot: FreeSlot): string {
+  if (slot.isRecurring) {
+    return [...slot.daysOfWeek].sort().map((d) => DAY_FULL[d]).join(", ");
+  }
+  return slot.specificDate
+    ? new Date(slot.specificDate).toLocaleDateString("es-AR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
+    : "";
 }
 
 export default function StudentSchedule() {
@@ -29,7 +43,7 @@ export default function StudentSchedule() {
         if (!res.ok) throw new Error("Failed to fetch classes");
 
         const data = await res.json();
-        const classList = data.data || [];
+        const classList = data || [];
         setClasses(classList);
         if (classList.length > 0) {
           setSelectedClassId(classList[0].id);
@@ -51,7 +65,7 @@ export default function StudentSchedule() {
         const res = await fetch(`/api/student/classes/${selectedClassId}/free-slots`);
         if (!res.ok) throw new Error("Failed to fetch slots");
         const data = await res.json();
-        setSlots(data.data || []);
+        setSlots(data || []);
       } catch (err) {
         console.error("Error fetching slots:", err);
         alert("Error al cargar horarios");
@@ -68,10 +82,7 @@ export default function StudentSchedule() {
       const res = await fetch("/api/student/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          classId: selectedClassId,
-          scheduleId,
-        }),
+        body: JSON.stringify({ classId: selectedClassId, scheduleId }),
       });
 
       if (!res.ok) throw new Error("Failed to enroll");
@@ -80,12 +91,10 @@ export default function StudentSchedule() {
 
       try {
         setLoading(true);
-        const slotsRes = await fetch(
-          `/api/student/classes/${selectedClassId}/free-slots`
-        );
+        const slotsRes = await fetch(`/api/student/classes/${selectedClassId}/free-slots`);
         if (slotsRes.ok) {
           const data = await slotsRes.json();
-          setSlots(data.data || []);
+          setSlots(data || []);
         }
       } catch (err) {
         console.error("Error refetching slots:", err);
@@ -118,9 +127,7 @@ export default function StudentSchedule() {
               className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded input-field"
             >
               {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -135,25 +142,26 @@ export default function StudentSchedule() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {slots.map((slot) => (
                 <div key={slot.id} className="card">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <p className="text-gray-600 text-sm">Inicio</p>
-                      <p className="font-semibold">
-                        {new Date(slot.startTime).toLocaleString()}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        slot.isRecurring
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {slot.isRecurring ? "Recurrente" : "Fecha específica"}
+                    </span>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-gray-600 text-sm">Fin</p>
-                    <p className="font-semibold">
-                      {new Date(slot.endTime).toLocaleString()}
-                    </p>
-                  </div>
+                  <p className="font-semibold text-sm mb-1">{formatSlotLabel(slot)}</p>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {slot.timeStart} - {slot.timeEnd}
+                  </p>
 
                   <div className="mb-4 py-3 border-t border-b">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Espacios disponibles</span>
+                      <span className="text-gray-600 text-sm">Espacios disponibles</span>
                       <span className="font-bold text-lg text-green-600">
                         {slot.spotsAvailable}/{slot.totalSpots}
                       </span>

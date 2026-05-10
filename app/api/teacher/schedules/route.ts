@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
   const { tenant } = result;
 
   const schedules = await db.schedule.findMany({
-    where: { tenantId: tenant.id },
+    where: { tenantId: tenant.id, isCancelled: false },
     include: { class: true },
-    orderBy: { startTime: "asc" },
+    orderBy: { createdAt: "asc" },
   });
 
   return successResponse(schedules);
@@ -22,13 +22,20 @@ export async function POST(request: NextRequest) {
   if (!isUserTenantResult(result)) return result;
 
   const { tenant } = result;
-  const { classId, startTime, endTime } = await request.json();
+  const { classId, isRecurring, daysOfWeek, timeStart, timeEnd, specificDate } = await request.json();
 
-  if (!classId || !startTime || !endTime) {
-    return errorResponse("classId, startTime, endTime are required", 400);
+  if (!classId || !timeStart || !timeEnd) {
+    return errorResponse("classId, timeStart, timeEnd are required", 400);
   }
 
-  // Verify class belongs to tenant
+  if (isRecurring && (!daysOfWeek || daysOfWeek.length === 0)) {
+    return errorResponse("daysOfWeek is required for recurring schedules", 400);
+  }
+
+  if (!isRecurring && !specificDate) {
+    return errorResponse("specificDate is required for one-off schedules", 400);
+  }
+
   const classExists = await db.class.findFirst({
     where: { id: classId, tenantId: tenant.id },
   });
@@ -41,8 +48,11 @@ export async function POST(request: NextRequest) {
     data: {
       tenantId: tenant.id,
       classId,
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
+      isRecurring: isRecurring ?? true,
+      daysOfWeek: isRecurring ? daysOfWeek : [],
+      timeStart,
+      timeEnd,
+      specificDate: !isRecurring && specificDate ? new Date(specificDate) : null,
     },
     include: { class: true },
   });

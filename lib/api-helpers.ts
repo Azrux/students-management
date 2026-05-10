@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "./db";
 import { User, Tenant } from "@prisma/client";
 
+// request param kept for backward compatibility — not used internally
 export async function getCurrentUserWithTenant(
-  request: NextRequest
+  _request?: NextRequest
 ): Promise<NextResponse | { user: User; tenant: Tenant }> {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  const { userId } = await auth();
 
-  if (!token || !token.sub) {
+  if (!userId) {
     return errorResponse("Unauthorized", 401);
   }
 
   const user = await db.user.findUnique({
-    where: { id: token.sub },
+    where: { clerkId: userId },
   });
 
   if (!user) {
-    return errorResponse("User not found", 404);
+    return errorResponse("User not found — complete onboarding first", 404);
   }
 
   if (!user.tenantId) {

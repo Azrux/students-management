@@ -21,21 +21,25 @@ export async function GET(
   const schedules = await db.schedule.findMany({
     where: {
       classId,
-      startTime: { gt: now },
       isCancelled: false,
+      OR: [
+        { isRecurring: true },
+        { isRecurring: false, specificDate: { gt: now } },
+      ],
     },
-    include: {
-      enrollments: true,
-    },
-    orderBy: { startTime: "asc" },
+    include: { enrollments: true },
+    orderBy: { createdAt: "asc" },
   });
 
   const freeSlots = schedules
     .filter((s) => s.enrollments.length < classData.maxStudents)
     .map((s) => ({
       id: s.id,
-      startTime: s.startTime,
-      endTime: s.endTime,
+      isRecurring: s.isRecurring,
+      daysOfWeek: s.daysOfWeek,
+      timeStart: s.timeStart,
+      timeEnd: s.timeEnd,
+      specificDate: s.specificDate,
       spotsAvailable: classData.maxStudents - s.enrollments.length,
       totalSpots: classData.maxStudents,
     }));

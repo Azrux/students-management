@@ -27,7 +27,7 @@ export default function StudentDashboard() {
         if (!res.ok) throw new Error("Failed to fetch payments");
 
         const data = await res.json();
-        setPayments(data.data || []);
+        setPayments(data || []);
       } catch (err) {
         console.error("Error fetching payments:", err);
       } finally {
