@@ -112,18 +112,13 @@ export async function POST(request: NextRequest) {
     );
 
     // Get tenant to send teacher email
-    const tenant = await db.tenant.findUnique({
-      where: { id: tenantId },
-      include: {
-        users: {
-          where: { role: "TEACHER" },
-          select: { email: true, name: true },
-        },
-      },
+    const teacherUsers = await db.user.findMany({
+      where: { tenantId, isTeacher: true },
+      select: { email: true, name: true },
     });
 
-    if (tenant && tenant.users.length > 0) {
-      const teacher = tenant.users[0];
+    if (teacherUsers.length > 0) {
+      const teacher = teacherUsers[0];
       await sendTeacherPaymentReceivedEmail(
         teacher.name,
         teacher.email,

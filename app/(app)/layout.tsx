@@ -13,17 +13,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
   const router = useRouter();
 
-  const userRole = user?.publicMetadata?.role as string | undefined;
+  const isTeacher = Boolean(user?.publicMetadata?.isTeacher);
+  const isStudent = Boolean(user?.publicMetadata?.isStudent);
+  const isAdmin = Boolean(user?.publicMetadata?.isAdmin);
+  const hasAnyProfile = isTeacher || isStudent || isAdmin;
 
   useEffect(() => {
     if (isLoaded && !user) {
       router.push("/auth/login");
     }
-    // Redirect to onboarding if Clerk user exists but hasn't chosen a role yet
-    if (isLoaded && user && !userRole) {
+    // Redirect to onboarding if Clerk user exists but hasn't chosen a profile yet
+    if (isLoaded && user && !hasAnyProfile) {
       router.push("/onboarding");
     }
-  }, [isLoaded, user, userRole, router]);
+  }, [isLoaded, user, hasAnyProfile, router]);
 
   if (!isLoaded) {
     return (
@@ -33,7 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !userRole) return null;
+  if (!user || !hasAnyProfile) return null;
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -43,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="text-2xl font-bold text-[var(--primary)]">{t.app.name}</h1>
         </div>
         <ul className="space-y-2 px-4">
-          {userRole === "TEACHER" && (
+          {isTeacher && (
             <>
               <li>
                 <Link href="/teacher/dashboard" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded">
@@ -82,7 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </li>
             </>
           )}
-          {userRole === "STUDENT" && (
+          {isStudent && (
             <>
               <li>
                 <Link href="/student/dashboard" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded">
@@ -101,7 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </li>
             </>
           )}
-          {userRole === "ADMIN" && (
+          {isAdmin && (
             <li>
               <Link href="/admin/tenants" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded">
                 Tenants
@@ -109,6 +112,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </li>
           )}
         </ul>
+        {(!isTeacher || !isStudent) && (
+          <div className="px-4 mt-4">
+            <Link
+              href="/onboarding/add-profile"
+              className="block px-4 py-2 text-sm text-[var(--primary)] hover:underline"
+            >
+              {!isTeacher ? "+ Activar perfil de profesor" : "+ Activar perfil de alumno"}
+            </Link>
+          </div>
+        )}
         <div className="absolute bottom-4 left-4 right-4">
           <button
             onClick={() => signOut({ redirectUrl: "/" })}

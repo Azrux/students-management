@@ -13,15 +13,19 @@ export async function POST(request: NextRequest) {
   const user = await db.user.findUnique({ where: { clerkId: userId } });
   if (!user) return errorResponse("User not found", 404);
 
-  const student = await db.student.findUnique({ where: { userId: user.id } });
-  if (!student) return errorResponse("Student profile not found", 404);
-
   const { classId, scheduleId } = await request.json();
 
   if (!classId) return errorResponse("classId is required", 400);
 
   const classData = await db.class.findUnique({ where: { id: classId } });
   if (!classData) return errorResponse("Class not found", 404);
+
+  // The class belongs to one tenant/teacher — find this user's Student row
+  // for that specific teacher (they may have several, one per teacher).
+  const student = await db.student.findFirst({
+    where: { userId: user.id, tenantId: classData.tenantId },
+  });
+  if (!student) return errorResponse("Student profile not found", 404);
 
   const existingEnrollment = await db.enrollment.findFirst({
     where: { studentId: student.id, classId },

@@ -37,8 +37,7 @@ export default function OnboardingPage() {
 
       // Reload Clerk session so publicMetadata updates are visible
       await user?.reload();
-      const updatedRole = user?.publicMetadata?.role as string | undefined;
-      router.push(updatedRole === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
+      router.push(role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
     } catch {
       setError("Error al completar el registro");
     } finally {

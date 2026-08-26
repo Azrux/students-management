@@ -33,14 +33,19 @@ model Tenant {
   progressNotes ProgressNote[]
 }
 
-// User = both students and teachers
+// User = both students and teachers. A single account can carry a teacher
+// profile and/or a student profile — these are independent add-ons, not an
+// exclusive choice, so the same login can eventually do both.
 model User {
   id            String   @id @default(cuid()) @map("_id")
   clerkId       String?  @unique
   email         String
   passwordHash  String?
   name          String
-  role          Role
+  isTeacher     Boolean  @default(false)
+  isStudent     Boolean  @default(false)
+  isAdmin       Boolean  @default(false)
+  // Only meaningful when isTeacher: the workspace this user runs as a teacher.
   tenantId      String?
   createdAt     DateTime @default(now())
 
@@ -48,35 +53,47 @@ model User {
   emailNotifications Json @default("{\"paymentConfirmation\":true,\"paymentReminder\":true,\"classReminder\":true,\"paymentReceived\":true}")
 
   tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  studentProfile Student?
+  // A student profile can belong to more than one tenant (one per teacher
+  // that has enrolled them), so this is 1-to-many rather than a single
+  // studentProfile the old single-role model used.
+  students      Student[]
 
   @@unique([email, tenantId])
   @@index([tenantId])
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
+enum StudentStatus {
+  // Invited by a teacher but hasn't created/linked an account yet.
+  PENDING
+  ACTIVE
 }
 
-// Student = enrolled learner
+// Student = a user's enrollment relationship with one specific tenant.
+// The same person (User) can have several Student rows, one per teacher —
+// this is what makes "one student, several teachers" possible later, once
+// the public marketplace (rather than teacher-invite-only) is turned on.
 model Student {
-  id            String   @id @default(cuid()) @map("_id")
-  userId        String   @unique
+  id            String        @id @default(cuid()) @map("_id")
+  // Null until the invited person creates/links their account.
+  userId        String?
   tenantId      String
   name          String
   email         String
   phone         String?
-  createdAt     DateTime @default(now())
+  status        StudentStatus @default(PENDING)
+  inviteToken   String?       @unique
+  invitedAt     DateTime?
+  joinedAt      DateTime?
+  createdAt     DateTime      @default(now())
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enrollments   Enrollment[]
   payments      Payment[]
   progressNotes ProgressNote[]
 
   @@index([tenantId])
+  @@index([userId])
 }
 
 // Class = type of class (e.g., "Padel Beginners")
@@ -226,4 +243,35 @@ model ProgressNote {
   @@index([tenantId])
   @@index([studentId])
   @@index([classId])
+}
+
+// --- Marketplace foundations (schema only — not wired to any UI/API yet) ---
+// These exist so a User can message another User once the public directory
+// is turned on (see lib/feature-flags.ts). Not used while MARKETPLACE_ENABLED
+// is off; kept here so the data model doesn't need another migration later.
+
+// Conversation = a DM thread between two accounts (e.g. a prospective
+// student messaging a teacher found in the public directory).
+model Conversation {
+  id                 String   @id @default(cuid()) @map("_id")
+  participantIds     String[]
+  lastMessageAt      DateTime @default(now())
+  lastMessagePreview String?
+  createdAt          DateTime @default(now())
+
+  messages           Message[]
+
+  @@index([participantIds])
+}
+
+model Message {
+  id             String   @id @default(cuid()) @map("_id")
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }

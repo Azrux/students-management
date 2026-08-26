@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const userRole = user?.publicMetadata?.role as string | undefined;
+  const isTeacher = Boolean(user?.publicMetadata?.isTeacher);
+  const isStudent = Boolean(user?.publicMetadata?.isStudent);
   const userName = user?.firstName ?? user?.username ?? "";
 
   return (
@@ -16,7 +17,7 @@ export default function DashboardPage() {
         {t.dashboard.welcome}, {userName}
       </h1>
 
-      {userRole === "TEACHER" && (
+      {isTeacher && (
         <div className="grid md:grid-cols-4 gap-4">
           <div className="card">
             <div className="text-3xl font-bold text-[var(--primary)]">-</div>
@@ -37,7 +38,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {userRole === "STUDENT" && (
+      {isStudent && (
         <div className="grid md:grid-cols-2 gap-6">
           <div className="card">
             <h2 className="text-2xl font-bold mb-4">{t.student.activePayments}</h2>
@@ -54,14 +55,14 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold mb-4">Próximos Pasos</h2>
         <ul className="space-y-2 text-gray-600">
           <li>✓ Cuenta creada</li>
-          {userRole === "TEACHER" && (
+          {isTeacher && (
             <>
               <li>→ Crear tu primera clase</li>
               <li>→ Agregar estudiantes</li>
               <li>→ Crear planes de pago</li>
             </>
           )}
-          {userRole === "STUDENT" && (
+          {isStudent && (
             <>
               <li>→ Buscar un profesor</li>
               <li>→ Comprar clases</li>

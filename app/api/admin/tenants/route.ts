@@ -5,7 +5,7 @@ import { errorResponse, successResponse } from "@/lib/api-helpers";
 
 async function verifyAdminAccess() {
   const { userId, sessionClaims } = await auth();
-  if (!userId || (sessionClaims?.publicMetadata as { role?: string })?.role !== "ADMIN") {
+  if (!userId || (sessionClaims?.publicMetadata as { isAdmin?: boolean })?.isAdmin !== true) {
     return null;
   }
   return userId;

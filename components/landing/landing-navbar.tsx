@@ -13,8 +13,8 @@ export function LandingNavbar() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
 
-  const userRole = user?.publicMetadata?.role as string | undefined;
-  const dashboardUrl = userRole === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard";
+  const isTeacher = Boolean(user?.publicMetadata?.isTeacher);
+  const dashboardUrl = isTeacher ? "/teacher/dashboard" : "/student/dashboard";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">

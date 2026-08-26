@@ -119,6 +119,41 @@ export async function sendPaymentExpiryWarningEmail(
   }
 }
 
+export async function sendStudentInviteEmail(
+  studentName: string,
+  studentEmail: string,
+  teacherName: string,
+  tenantName: string,
+  inviteUrl: string
+) {
+  const resend = getResend();
+  if (!resend) return;
+
+  try {
+    await resend.emails.send({
+      from: "noreply@estudiantesapp.com",
+      to: studentEmail,
+      subject: `${teacherName} te invitó a ${tenantName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>¡Hola ${studentName}!</h2>
+          <p><strong>${teacherName}</strong> te invitó a sumarte a <strong>${tenantName}</strong>.</p>
+          <p>Hacé clic en el siguiente enlace para crear tu cuenta y empezar:</p>
+          <p style="margin: 24px 0;">
+            <a href="${inviteUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">
+              Aceptar invitación
+            </a>
+          </p>
+          <p>Si el botón no funciona, copiá y pegá este enlace en tu navegador:<br/>${inviteUrl}</p>
+          <p>Saludos,<br/>El equipo de EstudiantesApp</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Error sending student invite email:", error);
+  }
+}
+
 export async function sendTeacherPaymentReceivedEmail(
   teacherName: string,
   teacherEmail: string,

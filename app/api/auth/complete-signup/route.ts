@@ -44,31 +44,32 @@ export async function POST(request: NextRequest) {
       tenantId = tenant.id;
     }
 
+    // Note: for role === "STUDENT" we intentionally do NOT create a Student
+    // row here. A Student row only exists once a teacher invites this person
+    // (see /api/teacher/students/invite) — that's what links them to a
+    // specific tenant. Self-signing-up as a student just activates the
+    // profile; their dashboard stays empty until a teacher invites them.
     const user = await db.user.create({
       data: {
         clerkId: userId,
         email,
         name,
         passwordHash: null,
-        role,
+        isTeacher: role === "TEACHER",
+        isStudent: role === "STUDENT",
         tenantId: tenantId ?? null,
       },
     });
 
-    if (role === "STUDENT") {
-      await db.student.create({
-        data: {
-          userId: user.id,
-          name,
-          email,
-          tenantId: "",
-        },
-      });
-    }
-
-    // Store role + tenantId in Clerk publicMetadata for fast middleware access
+    // Store profile flags + tenantId in Clerk publicMetadata for fast
+    // middleware/client access without a DB round-trip.
     await (await clerkClient()).users.updateUser(userId, {
-      publicMetadata: { role, tenantId: tenantId ?? null },
+      publicMetadata: {
+        isTeacher: user.isTeacher,
+        isStudent: user.isStudent,
+        isAdmin: user.isAdmin,
+        tenantId: tenantId ?? null,
+      },
     });
 
     return NextResponse.json({ message: "Setup complete" }, { status: 201 });

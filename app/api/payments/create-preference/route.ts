@@ -1,37 +1,41 @@
 import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { getCurrentUserWithTenant, errorResponse, successResponse, isUserTenantResult } from "@/lib/api-helpers";
+import { errorResponse, successResponse } from "@/lib/api-helpers";
 
 export async function POST(request: NextRequest) {
-  const result = await getCurrentUserWithTenant(request);
-  if (!isUserTenantResult(result)) return result;
+  const { userId } = await auth();
+  if (!userId) return errorResponse("Unauthorized", 401);
 
-  const { user, tenant } = result;
+  const user = await db.user.findUnique({ where: { clerkId: userId } });
+  if (!user) return errorResponse("User not found", 404);
+
   const { planId } = await request.json();
 
   if (!planId) {
     return errorResponse("planId is required", 400);
   }
 
-  const student = await db.student.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (!student) {
-    return errorResponse("Student profile not found", 404);
-  }
-
-  const plan = await db.paymentPlan.findFirst({
-    where: {
-      id: planId,
-      tenantId: tenant.id,
-    },
+  const plan = await db.paymentPlan.findUnique({
+    where: { id: planId },
     include: { class: true },
   });
 
   if (!plan) {
     return errorResponse("Plan not found", 404);
   }
+
+  // The plan belongs to one tenant/teacher — find this user's Student row
+  // for that specific teacher (they may have several, one per teacher).
+  const student = await db.student.findFirst({
+    where: { userId: user.id, tenantId: plan.tenantId },
+  });
+
+  if (!student) {
+    return errorResponse("Student profile not found", 404);
+  }
+
+  const tenant = { id: plan.tenantId };
 
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
   if (!accessToken) {

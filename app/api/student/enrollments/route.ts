@@ -10,11 +10,13 @@ export async function GET(_request: NextRequest) {
   const user = await db.user.findUnique({ where: { clerkId: userId } });
   if (!user) return errorResponse("User not found", 404);
 
-  const student = await db.student.findUnique({ where: { userId: user.id } });
-  if (!student) return errorResponse("Student profile not found", 404);
+  // A user can have a Student row per teacher that's invited/enrolled them —
+  // this aggregates across all of them, not just one tenant.
+  const students = await db.student.findMany({ where: { userId: user.id } });
+  if (students.length === 0) return errorResponse("Student profile not found", 404);
 
   const enrollments = await db.enrollment.findMany({
-    where: { studentId: student.id, status: "ACTIVE" },
+    where: { studentId: { in: students.map((s) => s.id) }, status: "ACTIVE" },
     include: { class: true },
   });
 
